@@ -1,1 +1,7 @@
-youtube-transcript-api>=0.6.0
+certifi==2025.11.12
+charset-normalizer==3.4.4
+defusedxml==0.7.1
+idna==3.11
+requests==2.32.5
+urllib3==2.6.2
+youtube-transcript-api==1.2.3
