@@ -1,0 +1,19 @@
+{
+  "project_root": "/Users/marabook_m1/Documents/APP_HOME/CascadeProjects/windsurf-project/youtube-transcript",
+  "project_type": "single",
+  "services": {
+    "main": {
+      "name": "main",
+      "path": "/Users/marabook_m1/Documents/APP_HOME/CascadeProjects/windsurf-project/youtube-transcript",
+      "language": "Python",
+      "framework": null,
+      "type": "unknown",
+      "package_manager": "pip",
+      "dependencies": [
+        "youtube-transcript-api"
+      ]
+    }
+  },
+  "infrastructure": {},
+  "conventions": {}
+}

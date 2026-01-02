@@ -1,0 +1,74 @@
+{
+  "complexity": "simple",
+  "workflow_type": "investigation",
+  "confidence": 0.85,
+  "reasoning": "Documentation verification is a read-only investigation task with limited scope. No code changes, external integrations, or infrastructure modifications expected. Primary uncertainty is the undefined scope of which documentation to verify.",
+
+  "analysis": {
+    "scope": {
+      "estimated_files": 5,
+      "estimated_services": 1,
+      "is_cross_cutting": false,
+      "notes": "Documentation files only (README.md, docs/, inline comments). Read-only analysis with potential minor documentation fixes."
+    },
+    "integrations": {
+      "external_services": [],
+      "new_dependencies": [],
+      "research_needed": false,
+      "notes": "No external integrations required. Standard file reading and content analysis."
+    },
+    "infrastructure": {
+      "docker_changes": false,
+      "database_changes": false,
+      "config_changes": false,
+      "notes": "No infrastructure changes needed for documentation verification."
+    },
+    "knowledge": {
+      "patterns_exist": true,
+      "research_required": false,
+      "unfamiliar_tech": [],
+      "notes": "Standard documentation verification task. No new technologies or patterns required."
+    },
+    "risk": {
+      "level": "low",
+      "concerns": [
+        "Undefined verification scope may lead to incomplete audit",
+        "No clear acceptance criteria for what constitutes 'verified'",
+        "Potential for misaligned effort without user clarification"
+      ],
+      "notes": "Low risk as this is a read-only investigation. Main concern is task vagueness rather than implementation risk."
+    }
+  },
+
+  "recommended_phases": [
+    "discovery",
+    "quick_spec",
+    "validation"
+  ],
+
+  "flags": {
+    "needs_research": false,
+    "needs_self_critique": false,
+    "needs_infrastructure_setup": false,
+    "needs_requirements_clarification": true
+  },
+
+  "validation_recommendations": {
+    "risk_level": "trivial",
+    "skip_validation": true,
+    "minimal_mode": true,
+    "test_types_required": [],
+    "security_scan_required": false,
+    "staging_deployment_required": false,
+    "reasoning": "Documentation verification is a read-only investigation task with no functional code changes. Any documentation fixes would be trivial text updates not requiring automated testing."
+  },
+
+  "notes": [
+    "Task is currently under-specified - no target documentation identified",
+    "Requirements phase recommends gathering user input before proceeding",
+    "This is an investigation/audit task rather than a feature implementation",
+    "If documentation fixes are needed, they would likely be trivial (typos, formatting) or low-risk (content updates)"
+  ],
+
+  "created_at": "2026-01-02T00:00:00Z"
+}
