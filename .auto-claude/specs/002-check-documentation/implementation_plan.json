@@ -1,0 +1,55 @@
+{
+  "feature": "Documentation Verification",
+  "spec_name": "check-documentation",
+  "workflow_type": "simple",
+  "total_phases": 1,
+  "recommended_workers": 1,
+  "phases": [
+    {
+      "phase": 1,
+      "name": "Documentation Verification",
+      "description": "Verify README.md accuracy against actual codebase",
+      "depends_on": [],
+      "subtasks": [
+        {
+          "id": "subtask-1-1",
+          "description": "Verify file existence, paths, and CLI options documented in README.md",
+          "service": "main",
+          "status": "completed",
+          "files_to_create": [
+            "docs-verification-report.md"
+          ],
+          "files_to_modify": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "manual",
+            "run": "Review docs-verification-report.md to ensure all checks are completed"
+          },
+          "notes": "Verified README.md documentation accuracy. Created docs-verification-report.md with findings: yt_transcript.py (exists \u2705), requirements.txt (correct \u2705), all CLI options verified \u2705. Note: yt-notebooklm-helper.py referenced in spec does not exist in codebase.",
+          "updated_at": "2026-01-02T10:41:48.785972+00:00"
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "created_at": "2026-01-02T00:00:00Z",
+    "complexity": "simple",
+    "estimated_sessions": 1,
+    "notes": "Read-only verification task. Creates report of documentation accuracy without modifying any code."
+  },
+  "last_updated": "2026-01-02T10:44:57.055088+00:00",
+  "qa_signoff": {
+    "status": "approved",
+    "qa_session": 0,
+    "issues_found": [
+      {
+        "description": "None"
+      }
+    ],
+    "tests_passed": {},
+    "timestamp": "2026-01-02T10:44:57.054884+00:00",
+    "ready_for_qa_revalidation": false
+  },
+  "status": "human_review",
+  "planStatus": "review"
+}
