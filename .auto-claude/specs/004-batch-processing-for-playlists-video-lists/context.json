@@ -1,0 +1,39 @@
+{
+  "task_description": "Batch Processing for Playlists & Video Lists - Transform YouTube Transcript Extractor from single-video to bulk processing tool with playlist support, file input, and parallel execution",
+  "scoped_services": ["main"],
+  "files_to_modify": {
+    "main": [
+      "yt_transcript.py",
+      "requirements.txt"
+    ]
+  },
+  "files_to_reference": [
+    "yt_transcript.py"
+  ],
+  "patterns": {
+    "video_id_extraction": "Lines 27-44: extract_video_id() handles URLs and raw IDs, returns None on failure - reuse for batch inputs",
+    "error_handling": "Lines 46-66: Return dict with success flag {'success': bool, 'error': str} - apply to each video in batch",
+    "argparse_structure": "Lines 123-147: RawDescriptionHelpFormatter with boolean flags - extend with mutually exclusive groups",
+    "file_writing": "Lines 77-119: pathlib-based file operations - use for .processed_videos.txt tracking",
+    "status_messages": "Emoji-based status (✅, ❌, 🎥) - maintain consistency in batch output"
+  },
+  "existing_implementations": {
+    "description": "No existing batch processing, parallel execution, or progress tracking. This is a completely new capability.",
+    "relevant_files": [
+      "yt_transcript.py"
+    ],
+    "reusable_components": [
+      "YouTubeTranscript.extract_video_id() - video ID extraction logic",
+      "YouTubeTranscript.get_transcript() - transcript fetching with error dict pattern",
+      "YouTubeTranscript.save_to_obsidian() - file writing pattern"
+    ]
+  },
+  "technical_decisions": {
+    "parallel_processing": "ThreadPoolExecutor (not ProcessPoolExecutor) - I/O-bound workload",
+    "playlist_library": "pytubefix (not pytube) - pytube is abandoned",
+    "progress_tracking": "tqdm with nested bars (position=0 for batch, position=1 for video)",
+    "worker_count": "Default 3 workers (avoid YouTube rate limiting)",
+    "state_persistence": "Simple .processed_videos.txt file (no database)"
+  },
+  "created_at": "2026-01-02T01:25:00.000000"
+}

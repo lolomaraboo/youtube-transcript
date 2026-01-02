@@ -1,0 +1,543 @@
+{
+  "feature": "Batch Processing for YouTube Playlists & Video Lists",
+  "workflow_type": "feature",
+  "workflow_rationale": "This is a net-new capability that extends single-video extraction to batch operations. It introduces new input modes (playlist URLs, file input, multiple arguments), parallel processing architecture, progress tracking, and error resilience - all while preserving existing single-video functionality. Not a refactor (no structural changes), not a bug fix (current behavior is correct), not a migration (no technology changes).",
+
+  "phases": [
+    {
+      "id": "phase-1-dependencies",
+      "name": "Dependencies Setup",
+      "type": "setup",
+      "description": "Add required dependencies for playlist extraction and progress tracking",
+      "depends_on": [],
+      "parallel_safe": true,
+      "subtasks": [
+        {
+          "id": "subtask-1-1",
+          "description": "Add pytubefix and tqdm to requirements.txt",
+          "service": "main",
+          "files_to_modify": ["requirements.txt"],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "cat requirements.txt",
+            "expected": "pytubefix and tqdm listed"
+          },
+          "status": "pending"
+        },
+        {
+          "id": "subtask-1-2",
+          "description": "Verify dependencies install correctly",
+          "service": "main",
+          "files_to_modify": [],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "pip install -r requirements.txt && python -c \"from pytubefix import Playlist; from tqdm import tqdm; print('OK')\"",
+            "expected": "OK"
+          },
+          "status": "pending"
+        }
+      ]
+    },
+
+    {
+      "id": "phase-2-input-parsing",
+      "name": "Input Mode Implementation",
+      "type": "implementation",
+      "description": "Implement the three input modes: playlist URLs, text files, and multiple arguments",
+      "depends_on": ["phase-1-dependencies"],
+      "parallel_safe": true,
+      "subtasks": [
+        {
+          "id": "subtask-2-1",
+          "description": "Modify argparse to support nargs='*' and mutually exclusive groups",
+          "service": "main",
+          "files_to_modify": ["yt_transcript.py"],
+          "files_to_create": [],
+          "patterns_from": ["yt_transcript.py (lines 123-147)"],
+          "verification": {
+            "type": "command",
+            "command": "python yt_transcript.py --help | grep -E '(--playlist|--file|urls)'",
+            "expected": "Shows new flags and modified positional argument"
+          },
+          "status": "pending",
+          "notes": "Change 'url' to 'urls' with nargs='*', add mutually exclusive group for --playlist and --file"
+        },
+        {
+          "id": "subtask-2-2",
+          "description": "Implement playlist URL extraction using pytubefix",
+          "service": "main",
+          "files_to_modify": ["yt_transcript.py"],
+          "files_to_create": [],
+          "patterns_from": ["yt_transcript.py (lines 27-44)"],
+          "verification": {
+            "type": "command",
+            "command": "python -c \"from pytubefix import Playlist; urls = Playlist('https://youtube.com/playlist?list=PLrAXtmErZgOeiKm4sgNOknGvNjby9efdf').video_urls; print(len(urls) > 0)\"",
+            "expected": "True"
+          },
+          "status": "pending",
+          "notes": "Create extract_playlist_videos() method that returns list of video URLs"
+        },
+        {
+          "id": "subtask-2-3",
+          "description": "Implement text file parsing with comment/empty line filtering",
+          "service": "main",
+          "files_to_modify": ["yt_transcript.py"],
+          "files_to_create": [],
+          "patterns_from": ["yt_transcript.py (lines 77-119)"],
+          "verification": {
+            "type": "command",
+            "command": "echo -e '# Comment\\n\\nhttps://youtube.com/watch?v=test\\n' > /tmp/test_urls.txt && python yt_transcript.py --file /tmp/test_urls.txt --help",
+            "expected": "File parsed without error"
+          },
+          "status": "pending",
+          "notes": "Create parse_url_file() method using pathlib, skip lines starting with # or empty"
+        },
+        {
+          "id": "subtask-2-4",
+          "description": "Implement mode detection and video ID deduplication logic",
+          "service": "main",
+          "files_to_modify": ["yt_transcript.py"],
+          "files_to_create": [],
+          "patterns_from": ["yt_transcript.py (lines 27-44)"],
+          "verification": {
+            "type": "manual",
+            "instructions": "Test with: 1 URL (single mode), 2+ URLs (batch mode), --playlist flag, --file flag"
+          },
+          "status": "pending",
+          "notes": "Detect mode based on: len(urls)==1 and no flags = single, otherwise batch. Deduplicate video IDs before processing."
+        }
+      ]
+    },
+
+    {
+      "id": "phase-3-batch-processing",
+      "name": "Batch Processing Core",
+      "type": "implementation",
+      "description": "Implement parallel batch processing with ThreadPoolExecutor and error resilience",
+      "depends_on": ["phase-2-input-parsing"],
+      "parallel_safe": true,
+      "subtasks": [
+        {
+          "id": "subtask-3-1",
+          "description": "Create batch processing orchestrator with ThreadPoolExecutor",
+          "service": "main",
+          "files_to_modify": ["yt_transcript.py"],
+          "files_to_create": [],
+          "patterns_from": ["yt_transcript.py (lines 46-66)"],
+          "verification": {
+            "type": "command",
+            "command": "python -c \"from concurrent.futures import ThreadPoolExecutor, as_completed; print('OK')\"",
+            "expected": "OK"
+          },
+          "status": "pending",
+          "notes": "Create process_batch() method using ThreadPoolExecutor, default 3 workers, configurable via --parallel flag"
+        },
+        {
+          "id": "subtask-3-2",
+          "description": "Implement per-video error isolation with continue-on-failure",
+          "service": "main",
+          "files_to_modify": ["yt_transcript.py"],
+          "files_to_create": [],
+          "patterns_from": ["yt_transcript.py (lines 46-66)"],
+          "verification": {
+            "type": "manual",
+            "instructions": "Test with mix of valid and invalid video IDs - batch should continue after failures"
+          },
+          "status": "pending",
+          "notes": "Wrap each video processing in try/except, collect errors in list, continue batch"
+        },
+        {
+          "id": "subtask-3-3",
+          "description": "Add --parallel N flag for configurable worker count",
+          "service": "main",
+          "files_to_modify": ["yt_transcript.py"],
+          "files_to_create": [],
+          "patterns_from": ["yt_transcript.py (lines 123-147)"],
+          "verification": {
+            "type": "command",
+            "command": "python yt_transcript.py --help | grep parallel",
+            "expected": "Shows --parallel flag documentation"
+          },
+          "status": "pending",
+          "notes": "Add argparse flag, default 3, validate range 1-10 to avoid rate limiting"
+        }
+      ]
+    },
+
+    {
+      "id": "phase-4-progress-tracking",
+      "name": "Progress Tracking",
+      "type": "implementation",
+      "description": "Implement dual-level progress bars with tqdm",
+      "depends_on": ["phase-3-batch-processing"],
+      "parallel_safe": true,
+      "subtasks": [
+        {
+          "id": "subtask-4-1",
+          "description": "Implement outer batch progress bar",
+          "service": "main",
+          "files_to_modify": ["yt_transcript.py"],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "manual",
+            "instructions": "Run batch processing and verify progress bar shows X/Y videos completed"
+          },
+          "status": "pending",
+          "notes": "Use tqdm(total=len(video_ids), desc='Batch Progress', position=0)"
+        },
+        {
+          "id": "subtask-4-2",
+          "description": "Implement per-video progress indication",
+          "service": "main",
+          "files_to_modify": ["yt_transcript.py"],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "manual",
+            "instructions": "Run batch and verify current video being processed is shown"
+          },
+          "status": "pending",
+          "notes": "Use tqdm.write() for video status messages to avoid progress bar corruption"
+        },
+        {
+          "id": "subtask-4-3",
+          "description": "Add playlist extraction progress for large playlists",
+          "service": "main",
+          "files_to_modify": ["yt_transcript.py"],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "manual",
+            "instructions": "Test with large playlist (100+ videos) and verify extraction progress shown"
+          },
+          "status": "pending",
+          "notes": "Show 'Extracting playlist videos...' message during pytubefix playlist parsing"
+        }
+      ]
+    },
+
+    {
+      "id": "phase-5-skip-processed",
+      "name": "Skip Processed Feature",
+      "type": "implementation",
+      "description": "Implement state persistence for already-processed videos",
+      "depends_on": ["phase-3-batch-processing"],
+      "parallel_safe": true,
+      "subtasks": [
+        {
+          "id": "subtask-5-1",
+          "description": "Create .processed_videos.txt tracking file mechanism",
+          "service": "main",
+          "files_to_modify": ["yt_transcript.py"],
+          "files_to_create": [],
+          "patterns_from": ["yt_transcript.py (lines 77-119)"],
+          "verification": {
+            "type": "command",
+            "command": "test -f .processed_videos.txt && echo 'OK' || echo 'FAIL'",
+            "expected": "File created after batch processing"
+          },
+          "status": "pending",
+          "notes": "Use pathlib to read/write .processed_videos.txt (one video ID per line)"
+        },
+        {
+          "id": "subtask-5-2",
+          "description": "Implement --skip-processed flag and filtering logic",
+          "service": "main",
+          "files_to_modify": ["yt_transcript.py"],
+          "files_to_create": [],
+          "patterns_from": ["yt_transcript.py (lines 123-147)"],
+          "verification": {
+            "type": "manual",
+            "instructions": "Run batch twice with --skip-processed - second run should skip all videos"
+          },
+          "status": "pending",
+          "notes": "Add argparse flag, load processed IDs before batch, filter video list, append new IDs after successful processing"
+        }
+      ]
+    },
+
+    {
+      "id": "phase-6-summary-reporting",
+      "name": "Summary Reporting",
+      "type": "implementation",
+      "description": "Implement end-of-run summary with success/failure counts",
+      "depends_on": ["phase-4-progress-tracking"],
+      "parallel_safe": true,
+      "subtasks": [
+        {
+          "id": "subtask-6-1",
+          "description": "Implement error aggregation during batch processing",
+          "service": "main",
+          "files_to_modify": ["yt_transcript.py"],
+          "files_to_create": [],
+          "patterns_from": ["yt_transcript.py (lines 46-66)"],
+          "verification": {
+            "type": "manual",
+            "instructions": "Test with mixed valid/invalid videos - verify errors collected"
+          },
+          "status": "pending",
+          "notes": "Collect results in list during batch: {'video_id': str, 'success': bool, 'error': str}"
+        },
+        {
+          "id": "subtask-6-2",
+          "description": "Create summary report formatter with emoji status",
+          "service": "main",
+          "files_to_modify": ["yt_transcript.py"],
+          "files_to_create": [],
+          "patterns_from": ["yt_transcript.py (emoji usage pattern)"],
+          "verification": {
+            "type": "manual",
+            "instructions": "Run batch and verify summary shows: '✅ X succeeded, ❌ Y failed' with error details"
+          },
+          "status": "pending",
+          "notes": "Print summary at end: success count, failure count, list of failed videos with errors"
+        }
+      ]
+    },
+
+    {
+      "id": "phase-7-integration",
+      "name": "Integration & Testing",
+      "type": "integration",
+      "description": "Wire all components together and verify end-to-end workflows",
+      "depends_on": ["phase-5-skip-processed", "phase-6-summary-reporting"],
+      "parallel_safe": false,
+      "subtasks": [
+        {
+          "id": "subtask-7-1",
+          "description": "Verify backward compatibility with single-video mode",
+          "service": "main",
+          "files_to_modify": [],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "command",
+            "command": "python yt_transcript.py dQw4w9WgXcQ --copy",
+            "expected": "Single video mode works exactly as before"
+          },
+          "status": "pending",
+          "notes": "Test existing usage patterns to ensure no regression"
+        },
+        {
+          "id": "subtask-7-2",
+          "description": "End-to-end test: Playlist URL processing",
+          "service": "main",
+          "files_to_modify": [],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "e2e",
+            "steps": [
+              "Run with --playlist and small test playlist (5-10 videos)",
+              "Verify all videos extracted and processed",
+              "Check progress bars display correctly",
+              "Verify summary report shows accurate counts"
+            ]
+          },
+          "status": "pending",
+          "notes": "Use real YouTube playlist for testing"
+        },
+        {
+          "id": "subtask-7-3",
+          "description": "End-to-end test: File input processing",
+          "service": "main",
+          "files_to_modify": [],
+          "files_to_create": ["test_urls.txt"],
+          "patterns_from": [],
+          "verification": {
+            "type": "e2e",
+            "steps": [
+              "Create test_urls.txt with 10 URLs (include comments and empty lines)",
+              "Run with --file test_urls.txt --parallel 5",
+              "Verify comments/empty lines skipped",
+              "Verify all valid URLs processed",
+              "Check summary report"
+            ]
+          },
+          "status": "pending",
+          "notes": "Test file parsing edge cases"
+        },
+        {
+          "id": "subtask-7-4",
+          "description": "End-to-end test: Skip processed feature",
+          "service": "main",
+          "files_to_modify": [],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "e2e",
+            "steps": [
+              "Run batch with --skip-processed",
+              "Verify .processed_videos.txt created",
+              "Re-run same batch with --skip-processed",
+              "Verify all videos skipped (0 processed)"
+            ]
+          },
+          "status": "pending",
+          "notes": "Test state persistence and filtering"
+        },
+        {
+          "id": "subtask-7-5",
+          "description": "End-to-end test: Error resilience",
+          "service": "main",
+          "files_to_modify": [],
+          "files_to_create": [],
+          "patterns_from": [],
+          "verification": {
+            "type": "e2e",
+            "steps": [
+              "Create batch with mix of valid and invalid video IDs",
+              "Include video with no transcript available",
+              "Run batch and verify continues after errors",
+              "Check summary shows correct failure count and error messages"
+            ]
+          },
+          "status": "pending",
+          "notes": "Test error isolation and reporting"
+        }
+      ]
+    }
+  ],
+
+  "summary": {
+    "total_phases": 7,
+    "total_subtasks": 21,
+    "services_involved": ["main"],
+    "parallelism": {
+      "max_parallel_phases": 4,
+      "parallel_groups": [
+        {
+          "phases": ["phase-2-input-parsing", "phase-1-dependencies"],
+          "reason": "Dependencies setup can run before input parsing implementation"
+        },
+        {
+          "phases": ["phase-4-progress-tracking", "phase-5-skip-processed"],
+          "reason": "Both depend on phase-3, work on different code sections"
+        }
+      ],
+      "recommended_workers": 1,
+      "speedup_estimate": "Sequential execution recommended - subtasks have logical dependencies within phases"
+    },
+    "startup_command": "source auto-claude/.venv/bin/activate && python auto-claude/run.py --spec 004 --parallel 1"
+  },
+
+  "verification_strategy": {
+    "risk_level": "high",
+    "skip_validation": false,
+    "test_creation_phase": "post_implementation",
+    "test_types_required": ["unit", "integration", "e2e"],
+    "security_scanning_required": false,
+    "staging_deployment_required": false,
+    "acceptance_criteria": [
+      "All three input modes work correctly (playlist, file, arguments)",
+      "Parallel processing executes without race conditions",
+      "Progress bars display correctly without terminal corruption",
+      "Error isolation prevents batch failures",
+      "Summary report shows accurate counts",
+      "Skip-processed feature tracks and filters correctly",
+      "Backward compatibility with single-video mode maintained"
+    ],
+    "verification_steps": [
+      {
+        "name": "Unit Tests",
+        "command": "pytest tests/test_yt_transcript.py -v",
+        "expected_outcome": "All unit tests pass (video ID extraction, file parsing, deduplication, error handling, skip-processed tracking)",
+        "type": "test",
+        "required": true,
+        "blocking": true
+      },
+      {
+        "name": "Integration Tests",
+        "command": "pytest tests/test_integration.py -v",
+        "expected_outcome": "All integration tests pass (playlist extraction, transcript API batch, parallel execution)",
+        "type": "test",
+        "required": true,
+        "blocking": true
+      },
+      {
+        "name": "E2E Tests",
+        "command": "pytest tests/test_e2e.py -v",
+        "expected_outcome": "All E2E tests pass (playlist processing, file input, skip-processed, error resilience)",
+        "type": "test",
+        "required": true,
+        "blocking": true
+      },
+      {
+        "name": "Manual Verification",
+        "command": "bash tests/manual_test.sh",
+        "expected_outcome": "All manual test scenarios pass (real playlist, progress bars, backward compatibility)",
+        "type": "manual",
+        "required": true,
+        "blocking": true
+      }
+    ],
+    "reasoning": "High risk due to parallel processing complexity, error isolation requirements, and state management. Requires comprehensive testing across unit (individual components), integration (API interactions), and E2E (full workflows) levels."
+  },
+
+  "qa_acceptance": {
+    "unit_tests": {
+      "required": true,
+      "commands": ["pytest tests/test_yt_transcript.py -v"],
+      "minimum_coverage": null,
+      "tests_to_create": [
+        "test_extract_video_id_from_playlist",
+        "test_file_input_parsing",
+        "test_deduplication",
+        "test_error_resilience",
+        "test_skip_processed_tracking"
+      ]
+    },
+    "integration_tests": {
+      "required": true,
+      "commands": ["pytest tests/test_integration.py -v"],
+      "services_to_test": ["main"],
+      "tests_to_create": [
+        "test_playlist_extraction",
+        "test_transcript_api_batch",
+        "test_parallel_execution"
+      ]
+    },
+    "e2e_tests": {
+      "required": true,
+      "commands": ["pytest tests/test_e2e.py -v"],
+      "flows": [
+        "playlist-processing",
+        "file-input-processing",
+        "skip-processed-feature",
+        "error-handling"
+      ]
+    },
+    "browser_verification": {
+      "required": false,
+      "pages": [],
+      "notes": "CLI tool - no browser verification needed"
+    },
+    "database_verification": {
+      "required": false,
+      "checks": [],
+      "notes": "No database - simple text file tracking"
+    },
+    "manual_verification": {
+      "required": true,
+      "checklist": [
+        "Run with real YouTube playlist (10+ videos)",
+        "Test --parallel 5 with concurrent execution",
+        "Test with unavailable transcript video",
+        "Test --skip-processed on re-run",
+        "Test text file with comments and empty lines",
+        "Test with duplicate video IDs",
+        "Test backward compatibility (single video mode)",
+        "Verify progress bars don't corrupt terminal",
+        "Verify summary report accuracy",
+        "Test all three input modes with existing flags (--copy, --save)"
+      ]
+    }
+  },
+
+  "qa_signoff": null
+}

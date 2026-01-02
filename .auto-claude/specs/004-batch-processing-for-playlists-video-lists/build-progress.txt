@@ -1,0 +1,57 @@
+=== AUTO-BUILD PROGRESS ===
+
+Project: YouTube Transcript Extractor - Batch Processing Feature
+Workspace: .auto-claude/specs/004-batch-processing-for-playlists-video-lists
+Started: 2026-01-02
+
+Workflow Type: feature
+Rationale: Net-new capability that extends single-video extraction to batch operations with playlist support, file input, parallel execution, and comprehensive progress tracking. Preserves backward compatibility while adding significant new functionality.
+
+Session 1 (Planner):
+- Created implementation_plan.json
+- Phases: 7
+- Total subtasks: 21
+- Created init.sh
+- Created context.json with reusable patterns
+
+Phase Summary:
+- Phase 1 (Dependencies Setup): 2 subtasks - Add pytubefix and tqdm dependencies
+- Phase 2 (Input Mode Implementation): 4 subtasks - Implement playlist, file, and multi-argument input modes
+- Phase 3 (Batch Processing Core): 3 subtasks - ThreadPoolExecutor, error isolation, parallel flag
+- Phase 4 (Progress Tracking): 3 subtasks - Dual-level progress bars with tqdm
+- Phase 5 (Skip Processed Feature): 2 subtasks - State persistence with .processed_videos.txt
+- Phase 6 (Summary Reporting): 2 subtasks - Error aggregation and summary formatter
+- Phase 7 (Integration & Testing): 5 subtasks - E2E verification of all workflows
+
+Services Involved:
+- main (Python CLI): Single-file tool, all batch processing logic
+
+Parallelism Analysis:
+- Max parallel phases: 4 (phases 4 & 5 can run together)
+- Recommended workers: 1
+- Sequential execution recommended due to logical dependencies within phases
+
+Key Implementation Patterns Identified:
+- Video ID extraction (lines 27-44): Reuse for all input modes
+- Error handling (lines 46-66): Return dict pattern, apply to each video
+- Argparse structure (lines 123-147): Extend with mutually exclusive groups
+- File writing (lines 77-119): Use for skip-processed tracking
+- Emoji status messages: Maintain consistency (✅, ❌, 🎥, 📋)
+
+Technical Decisions:
+- ThreadPoolExecutor (not ProcessPoolExecutor) for I/O-bound workload
+- pytubefix (not pytube) - pytube is abandoned
+- tqdm for nested progress bars
+- Default 3 workers to avoid YouTube rate limiting
+- Simple .processed_videos.txt file (no database)
+
+=== STARTUP COMMAND ===
+
+To continue building this spec, run:
+
+  source auto-claude/.venv/bin/activate && python auto-claude/run.py --spec 004 --parallel 1
+
+Example:
+  source auto-claude/.venv/bin/activate && python auto-claude/run.py --spec 004 --parallel 1
+
+=== END SESSION 1 ===
